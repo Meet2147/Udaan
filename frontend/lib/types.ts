@@ -6,7 +6,7 @@ export type Tokens = {
 
 export type User = {
   id: number;
-  role: 'admin' | 'student';
+  role: 'admin' | 'student' | 'super_admin';
   full_name: string;
   email: string;
   phone: string;
