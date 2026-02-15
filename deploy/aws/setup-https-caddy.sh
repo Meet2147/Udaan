@@ -6,12 +6,22 @@ API_DOMAIN=${2:-api.dashovia.com}
 
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update -y
-apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
-apt-get update -y
-apt-get install -y caddy
+if command -v apt-get >/dev/null 2>&1; then
+  apt-get update -y
+  apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl
+  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+  apt-get update -y
+  apt-get install -y caddy
+elif command -v dnf >/dev/null 2>&1; then
+  dnf install -y curl ca-certificates
+  dnf install -y 'dnf-command(copr)'
+  dnf copr enable -y @caddy/caddy
+  dnf install -y caddy
+else
+  echo "Unsupported OS: no apt-get or dnf found"
+  exit 1
+fi
 
 cat > /etc/caddy/Caddyfile <<EOF
 $DOMAIN {
