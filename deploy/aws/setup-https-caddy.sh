@@ -15,9 +15,20 @@ if command -v apt-get >/dev/null 2>&1; then
   apt-get install -y caddy
 elif command -v dnf >/dev/null 2>&1; then
   dnf install -y curl ca-certificates
-  dnf install -y 'dnf-command(copr)'
-  dnf copr enable -y @caddy/caddy
-  dnf install -y caddy
+  if dnf install -y 'dnf-command(copr)' && dnf copr enable -y @caddy/caddy && dnf install -y caddy; then
+    :
+  else
+    echo "Copr repo unavailable; installing Caddy binary."
+    ARCH=$(uname -m)
+    if [ "$ARCH" = "x86_64" ]; then
+      ARCH="amd64"
+    elif [ "$ARCH" = "aarch64" ]; then
+      ARCH="arm64"
+    fi
+    curl -L "https://github.com/caddyserver/caddy/releases/latest/download/caddy_linux_${ARCH}.tar.gz" -o /tmp/caddy.tgz
+    tar -xzf /tmp/caddy.tgz -C /tmp
+    install -m 0755 /tmp/caddy /usr/local/bin/caddy
+  fi
 else
   echo "Unsupported OS: no apt-get or dnf found"
   exit 1
