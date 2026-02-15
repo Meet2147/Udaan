@@ -8,12 +8,14 @@ from pydantic import BaseModel
 class CourseCreate(BaseModel):
     level: str
     title: str
+    price_inr: int = 0
     description: str | None = None
 
 
 class CourseUpdate(BaseModel):
     level: str | None = None
     title: str | None = None
+    price_inr: int | None = None
     description: str | None = None
 
 
@@ -21,6 +23,7 @@ class CourseOut(BaseModel):
     id: int
     level: str
     title: str
+    price_inr: int
     description: str | None
     created_at: datetime
 

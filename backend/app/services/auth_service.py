@@ -51,6 +51,8 @@ def login(db: Session, email: str, password: str) -> tuple[User, str, str]:
     user = db.scalar(select(User).where(User.email == email))
     if not user or not verify_password(password, user.password_hash):
         raise ValueError("Invalid credentials")
+    if not user.is_active:
+        raise ValueError("Account inactive")
 
     access_token = create_access_token(str(user.id), user.role)
     refresh_token, expires_at = create_refresh_token(str(user.id), user.role)

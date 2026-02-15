@@ -9,6 +9,11 @@ export default function SuperAdminPage() {
   const [orgs, setOrgs] = useState<any[]>([]);
   const [orgName, setOrgName] = useState('');
   const [plan, setPlan] = useState('launch');
+  const [genre, setGenre] = useState('general');
+  const [features, setFeatures] = useState({ drawing: false, coding: false, general: true });
+  const [editOrgId, setEditOrgId] = useState('');
+  const [editGenre, setEditGenre] = useState('general');
+  const [editFeatures, setEditFeatures] = useState({ drawing: false, coding: false, general: true });
   const [adminForm, setAdminForm] = useState({
     orgId: '',
     full_name: '',
@@ -16,7 +21,13 @@ export default function SuperAdminPage() {
     phone: '',
     password: '',
   });
+  const [creditForm, setCreditForm] = useState({
+    email: '',
+    amount: 5,
+    reason: 'manual_grant',
+  });
   const [message, setMessage] = useState('');
+  const [paymentLink, setPaymentLink] = useState('');
 
   const load = () => api('/superadmin/orgs').then(setOrgs).catch(() => setOrgs([]));
 
@@ -31,6 +42,22 @@ export default function SuperAdminPage() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!editOrgId && orgs.length) {
+      setEditOrgId(String(orgs[0].id));
+      return;
+    }
+    const org = orgs.find((o) => String(o.id) === String(editOrgId));
+    if (org) {
+      setEditGenre(org.genre || 'general');
+      setEditFeatures({
+        drawing: !!org.ai_drawing_enabled,
+        coding: !!org.ai_coding_enabled,
+        general: org.ai_general_enabled !== false,
+      });
+    }
+  }, [editOrgId, orgs]);
+
   if (!ok) return <p>Loading...</p>;
 
   const createOrg = async (e: FormEvent) => {
@@ -39,7 +66,14 @@ export default function SuperAdminPage() {
     try {
       await api('/superadmin/orgs', {
         method: 'POST',
-        body: JSON.stringify({ name: orgName, plan }),
+        body: JSON.stringify({
+          name: orgName,
+          plan,
+          genre,
+          ai_drawing_enabled: features.drawing,
+          ai_coding_enabled: features.coding,
+          ai_general_enabled: features.general,
+        }),
       });
       setOrgName('');
       load();
@@ -52,8 +86,9 @@ export default function SuperAdminPage() {
   const createAdmin = async (e: FormEvent) => {
     e.preventDefault();
     setMessage('');
+    setPaymentLink('');
     try {
-      await api(`/superadmin/orgs/${adminForm.orgId}/admins`, {
+      const res = await api(`/superadmin/orgs/${adminForm.orgId}/admins`, {
         method: 'POST',
         body: JSON.stringify({
           full_name: adminForm.full_name,
@@ -63,10 +98,51 @@ export default function SuperAdminPage() {
           grade_or_standard: 'NA',
         }),
       });
+      if (res.payment_link_url) setPaymentLink(res.payment_link_url);
       setAdminForm({ orgId: '', full_name: '', email: '', phone: '', password: '' });
       setMessage('Admin created.');
     } catch (err: any) {
       setMessage(err.message || 'Failed to create admin');
+    }
+  };
+
+  const updateOrg = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editOrgId) return;
+    setMessage('');
+    try {
+      await api(`/superadmin/orgs/${editOrgId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          genre: editGenre,
+          ai_drawing_enabled: editFeatures.drawing,
+          ai_coding_enabled: editFeatures.coding,
+          ai_general_enabled: editFeatures.general,
+        }),
+      });
+      load();
+      setMessage('Organization updated.');
+    } catch (err: any) {
+      setMessage(err.message || 'Failed to update org');
+    }
+  };
+
+  const addCredits = async (e: FormEvent) => {
+    e.preventDefault();
+    setMessage('');
+    try {
+      await api('/superadmin/credits', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: creditForm.email,
+          amount: Number(creditForm.amount),
+          reason: creditForm.reason || 'manual_grant',
+        }),
+      });
+      setCreditForm({ email: '', amount: 5, reason: 'manual_grant' });
+      setMessage('Credits updated.');
+    } catch (err: any) {
+      setMessage(err.message || 'Failed to update credits');
     }
   };
 
@@ -77,6 +153,11 @@ export default function SuperAdminPage() {
         <div className="mt-2 text-2xl font-semibold">Organization Management</div>
         <div className="mt-2 text-sm text-slate-600">Create tutor organizations and manage admin seats by plan.</div>
         {message && <div className="mt-3 text-sm text-blue-700">{message}</div>}
+        {paymentLink && (
+          <div className="mt-2 text-sm text-slate-600">
+            Payment link: <a className="text-blue-600 underline" href={paymentLink} target="_blank" rel="noreferrer">{paymentLink}</a>
+          </div>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -88,6 +169,25 @@ export default function SuperAdminPage() {
             <option value="rise">Rise (10 admins)</option>
             <option value="scale">Scale (25 admins)</option>
           </select>
+          <select className="input" value={genre} onChange={(e) => setGenre(e.target.value)}>
+            <option value="drawing">Drawing</option>
+            <option value="coding">Coding</option>
+            <option value="general">General</option>
+          </select>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <label className="list-card flex items-center gap-2">
+              <input type="checkbox" checked={features.drawing} onChange={(e) => setFeatures({ ...features, drawing: e.target.checked })} />
+              Drawing AI
+            </label>
+            <label className="list-card flex items-center gap-2">
+              <input type="checkbox" checked={features.coding} onChange={(e) => setFeatures({ ...features, coding: e.target.checked })} />
+              Coding AI
+            </label>
+            <label className="list-card flex items-center gap-2">
+              <input type="checkbox" checked={features.general} onChange={(e) => setFeatures({ ...features, general: e.target.checked })} />
+              General AI
+            </label>
+          </div>
           <button className="btn-primary">Create Org</button>
         </form>
 
@@ -107,6 +207,46 @@ export default function SuperAdminPage() {
         </form>
       </div>
 
+      <div className="grid lg:grid-cols-2 gap-6">
+        <form className="panel p-5 space-y-3" onSubmit={updateOrg}>
+          <div className="text-lg font-semibold">Update Org Features</div>
+          <select className="input" value={editOrgId} onChange={(e) => setEditOrgId(e.target.value)} required>
+            <option value="">Select organization</option>
+            {orgs.map((o) => (
+              <option key={o.id} value={o.id}>{o.name}</option>
+            ))}
+          </select>
+          <select className="input" value={editGenre} onChange={(e) => setEditGenre(e.target.value)}>
+            <option value="drawing">Drawing</option>
+            <option value="coding">Coding</option>
+            <option value="general">General</option>
+          </select>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <label className="list-card flex items-center gap-2">
+              <input type="checkbox" checked={editFeatures.drawing} onChange={(e) => setEditFeatures({ ...editFeatures, drawing: e.target.checked })} />
+              Drawing AI
+            </label>
+            <label className="list-card flex items-center gap-2">
+              <input type="checkbox" checked={editFeatures.coding} onChange={(e) => setEditFeatures({ ...editFeatures, coding: e.target.checked })} />
+              Coding AI
+            </label>
+            <label className="list-card flex items-center gap-2">
+              <input type="checkbox" checked={editFeatures.general} onChange={(e) => setEditFeatures({ ...editFeatures, general: e.target.checked })} />
+              General AI
+            </label>
+          </div>
+          <button className="btn-primary">Save Features</button>
+        </form>
+
+        <form className="panel p-5 space-y-3" onSubmit={addCredits}>
+          <div className="text-lg font-semibold">Grant Drawing Credits</div>
+          <input className="input" placeholder="Student email" value={creditForm.email} onChange={(e) => setCreditForm({ ...creditForm, email: e.target.value })} required />
+          <input className="input" type="number" min={-999} max={999} placeholder="Amount" value={creditForm.amount} onChange={(e) => setCreditForm({ ...creditForm, amount: Number(e.target.value) })} required />
+          <input className="input" placeholder="Reason (optional)" value={creditForm.reason} onChange={(e) => setCreditForm({ ...creditForm, reason: e.target.value })} />
+          <button className="btn-primary">Apply Credits</button>
+        </form>
+      </div>
+
       <div className="panel p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-xl font-semibold">Organizations</div>
@@ -118,6 +258,12 @@ export default function SuperAdminPage() {
               <div className="text-sm text-slate-500">Org</div>
               <div className="text-lg font-semibold">{o.name}</div>
               <div className="text-xs text-slate-500">ID: {o.id}</div>
+              <div className="mt-2 text-xs text-slate-500">Genre: {o.genre || 'general'}</div>
+              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                {o.ai_drawing_enabled && <span className="chip">Drawing AI</span>}
+                {o.ai_coding_enabled && <span className="chip">Coding AI</span>}
+                {o.ai_general_enabled && <span className="chip">General AI</span>}
+              </div>
             </div>
           ))}
           {orgs.length === 0 && <div className="list-card text-sm text-slate-600">No organizations yet.</div>}

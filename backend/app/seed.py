@@ -39,18 +39,19 @@ def run_seed() -> None:
             )
             db.add(super_admin)
 
-        admin = db.scalar(select(User).where(User.role == "admin"))
-        if not admin:
-            admin = User(
-                role="admin",
-                organization_id=org.id,
-                full_name=settings.admin_full_name,
-                email=settings.admin_email,
-                phone=settings.admin_phone,
-                grade_or_standard=settings.admin_grade,
-                password_hash=hash_password(settings.admin_password),
-            )
-            db.add(admin)
+        if settings.admin_email:
+            admin = db.scalar(select(User).where(User.role == "admin"))
+            if not admin:
+                admin = User(
+                    role="admin",
+                    organization_id=org.id,
+                    full_name=settings.admin_full_name,
+                    email=settings.admin_email,
+                    phone=settings.admin_phone,
+                    grade_or_standard=settings.admin_grade,
+                    password_hash=hash_password(settings.admin_password),
+                )
+                db.add(admin)
 
         # Backfill organization_id for existing data
         db.execute(

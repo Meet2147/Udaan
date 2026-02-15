@@ -6,7 +6,10 @@ __pycache__/
 .mypy_cache/
 .venv/
 .env
+*.pem
 *.db
+AWSCLIV2.pkg
+frontend/.env.local
 
 backend/storage/
 backend/test_storage/

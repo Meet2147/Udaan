@@ -14,11 +14,11 @@ class Settings(BaseSettings):
     local_storage_path: str = "./storage"
     public_base_url: str = "http://localhost:8000"
 
-    admin_email: str = "admin@udaan.local"
-    admin_password: str = "Admin@123"
-    admin_full_name: str = "Udaan Admin"
-    admin_phone: str = "9999999999"
-    admin_grade: str = "NA"
+    admin_email: str = ""
+    admin_password: str = ""
+    admin_full_name: str = ""
+    admin_phone: str = ""
+    admin_grade: str = ""
 
     superadmin_email: str = "meet@dashovia.com"
     superadmin_password: str = "Mahantam#6559"
@@ -27,6 +27,14 @@ class Settings(BaseSettings):
     superadmin_grade: str = "NA"
 
     teacher_name: str = "Arts Teacher"
+
+    sonar_api_key: str = ""
+    openai_api_key: str = ""
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    razorpay_webhook_secret: str = ""
+    admin_subscription_price_inr: int = 11000
+    superadmin_commission_pct: int = 10
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

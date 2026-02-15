@@ -10,10 +10,11 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.session import get_db
 from app.media.signed_video import generate_video_token
-from app.models.models import Certificate, Course, Enrollment, Lecture, LectureProgress
+from app.models.models import Certificate, Course, Enrollment, Lecture, LectureProgress, Payment
 from app.schemas.student import CompleteResponse, PlayResponse, ProgressUpdate
 from app.services.certificate_service import generate_certificate
 from app.services.course_service import build_student_course_progress, course_completion_check, mark_complete, mark_progress
+from app.services.razorpay_service import create_order
 from app.storage.provider import storage_provider
 from app.utils.deps import require_student
 
@@ -45,17 +46,78 @@ def enroll(course_id: int, student=Depends(require_student), db: Session = Depen
 
     existing = db.scalar(select(Enrollment).where(and_(Enrollment.student_id == student.id, Enrollment.course_id == course_id)))
     if existing:
+        if existing.status == "pending_payment":
+            payment = db.scalar(select(Payment).where(Payment.enrollment_id == existing.id))
+            if payment and payment.razorpay_order_id:
+                return {
+                    "id": existing.id,
+                    "status": existing.status,
+                    "payment": {
+                        "provider": "razorpay",
+                        "key_id": settings.razorpay_key_id,
+                        "amount": payment.amount_inr * 100,
+                        "currency": payment.currency,
+                        "order_id": payment.razorpay_order_id,
+                        "name": course.title,
+                        "description": "Course enrollment",
+                    },
+                }
         return {"id": existing.id, "status": existing.status}
+
+    status = "pending"
+    if course.price_inr and course.price_inr > 0:
+        status = "pending_payment"
 
     enrollment = Enrollment(
         student_id=student.id,
         course_id=course_id,
-        status="pending",
+        status=status,
         organization_id=course.organization_id,
     )
     db.add(enrollment)
     db.commit()
     db.refresh(enrollment)
+
+    if status == "pending_payment":
+        if not settings.razorpay_key_id or not settings.razorpay_key_secret:
+            raise HTTPException(status_code=400, detail="Payments not configured")
+        commission = int((course.price_inr * settings.superadmin_commission_pct) / 100)
+        payment = Payment(
+            user_id=student.id,
+            organization_id=course.organization_id,
+            course_id=course.id,
+            enrollment_id=enrollment.id,
+            purpose="course_enrollment",
+            amount_inr=course.price_inr,
+            commission_inr=commission,
+            status="created",
+        )
+        db.add(payment)
+        db.commit()
+        db.refresh(payment)
+
+        order = create_order(
+            amount_inr=course.price_inr,
+            receipt=f"enroll_{enrollment.id}",
+            notes={"payment_id": str(payment.id), "course_id": str(course.id), "student_id": str(student.id)},
+        )
+        payment.razorpay_order_id = order.get("id")
+        db.commit()
+
+        return {
+            "id": enrollment.id,
+            "status": enrollment.status,
+            "payment": {
+                "provider": "razorpay",
+                "key_id": settings.razorpay_key_id,
+                "amount": order.get("amount"),
+                "currency": order.get("currency", "INR"),
+                "order_id": order.get("id"),
+                "name": course.title,
+                "description": "Course enrollment",
+            },
+        }
+
     return {"id": enrollment.id, "status": enrollment.status, "message": "Enrollment requested"}
 
 
@@ -65,10 +127,12 @@ def course_detail(course_id: int, student=Depends(require_student), db: Session 
     if not course or (student.organization_id and course.organization_id != student.organization_id):
         raise HTTPException(status_code=404, detail="Course not found")
     lectures = db.scalars(select(Lecture).where(Lecture.course_id == course_id).order_by(Lecture.order_index.asc())).all()
-    enrolled = _has_active_enrollment(db, student.id, course_id)
+    enrollment = db.scalar(select(Enrollment).where(and_(Enrollment.student_id == student.id, Enrollment.course_id == course_id)))
+    enrolled = enrollment is not None and enrollment.status in {"active", "completed"}
     return {
         "course": course,
         "enrolled": enrolled,
+        "enrollment_status": enrollment.status if enrollment else None,
         "lectures": lectures,
     }
 

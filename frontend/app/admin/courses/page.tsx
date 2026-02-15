@@ -9,6 +9,7 @@ export default function AdminCourses() {
   const [title, setTitle] = useState('');
   const [level, setLevel] = useState('');
   const [description, setDescription] = useState('');
+  const [price, setPrice] = useState(0);
 
   const load = () => api('/admin/courses').then(setCourses).catch(() => setCourses([]));
 
@@ -20,10 +21,11 @@ export default function AdminCourses() {
     e.preventDefault();
     await api('/admin/courses', {
       method: 'POST',
-      body: JSON.stringify({ title, level, description }),
+      body: JSON.stringify({ title, level, description, price_inr: Number(price) }),
     });
     setTitle('');
     setDescription('');
+    setPrice(0);
     load();
   };
 
@@ -36,6 +38,7 @@ export default function AdminCourses() {
           <input className="input" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
           <input className="input" placeholder="Category (e.g., Portrait, Calligraphy)" value={level} onChange={(e) => setLevel(e.target.value)} required />
           <textarea className="input" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <input className="input" type="number" min={0} placeholder="Price (INR)" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
           <button className="btn-primary">Save Course</button>
         </form>
       </div>
@@ -56,6 +59,7 @@ export default function AdminCourses() {
                 <div className="text-sm text-slate-500 uppercase">{c.level || 'Uncategorized'}</div>
                 <div className="text-lg font-semibold">{c.title}</div>
                 <div className="text-xs text-slate-500">{c.description || 'No description yet'}</div>
+                <div className="text-xs text-slate-500">Price: {c.price_inr ? `₹${c.price_inr}` : 'Free'}</div>
               </div>
               <Link className="btn-ghost" href={`/admin/courses/${c.id}/lectures`}>Manage Lectures</Link>
             </div>

@@ -34,6 +34,7 @@ def create_course(payload: CourseCreate, db: Session = Depends(get_db), user: Us
     course = Course(
         level=payload.level.lower(),
         title=payload.title,
+        price_inr=payload.price_inr,
         description=payload.description,
         organization_id=org_id,
     )
