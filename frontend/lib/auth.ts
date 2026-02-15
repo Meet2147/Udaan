@@ -17,9 +17,11 @@ export function clearTokens() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-export function authHeader() {
+export function authHeader(): HeadersInit {
   const t = getTokens();
-  return t ? { Authorization: `Bearer ${t.access_token}` } : {};
+  const headers: Record<string, string> = {};
+  if (t?.access_token) headers.Authorization = `Bearer ${t.access_token}`;
+  return headers;
 }
 
 export async function fetchMe(): Promise<User | null> {
