@@ -77,6 +77,10 @@ EOF
 
 sed -i.bak "s|^PUBLIC_BASE_URL=.*|PUBLIC_BASE_URL=https://$API_DOMAIN|" backend/.env
 
-docker compose -f deploy/aws/docker-compose.prod.yml --env-file deploy/aws/.env.prod up -d --build
+if command -v docker-compose >/dev/null 2>&1; then
+  docker-compose -f deploy/aws/docker-compose.prod.yml --env-file deploy/aws/.env.prod up -d --build
+else
+  docker compose -f deploy/aws/docker-compose.prod.yml --env-file deploy/aws/.env.prod up -d --build
+fi
 
 echo "HTTPS configured for $DOMAIN and $API_DOMAIN"
