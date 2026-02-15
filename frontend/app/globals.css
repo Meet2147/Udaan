@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f6f3ee;
+  --ink: #151515;
+  --muted: #5a5a5a;
+  --brand: #1a5cff;
+  --brand-ink: #0d1b4c;
+  --accent: #ffb30a;
+  --glass: rgba(255, 255, 255, 0.75);
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 10% 0%, #e9f0ff, transparent 60%),
+    radial-gradient(1000px 520px at 90% 10%, #fff3d1, transparent 55%),
+    var(--bg);
+  color: var(--ink);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-serif);
+}
+
+.page-shell {
+  @apply relative;
+}
+
+.card {
+  @apply rounded-2xl border border-black/10 bg-white/80 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur;
+}
+
+.panel {
+  @apply rounded-2xl border border-black/10 bg-white/70 shadow-[0_10px_30px_rgba(0,0,0,0.08)] backdrop-blur;
+}
+
+.kpi {
+  @apply rounded-2xl border border-black/10 bg-white/80 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.08)];
+}
+
+.chip {
+  @apply inline-flex items-center rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-medium text-slate-700;
+}
+
+.btn {
+  @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition;
+}
+
+.btn-primary {
+  @apply btn bg-blue-600 text-white shadow-[0_10px_20px_rgba(26,92,255,0.3)] hover:bg-blue-700;
+}
+
+.btn-ghost {
+  @apply btn border border-black/10 bg-white/70 text-slate-700 hover:bg-white;
+}
+
+.btn-dark {
+  @apply btn bg-slate-900 text-white hover:bg-black;
+}
+
+.input {
+  @apply w-full rounded-xl border border-black/10 bg-white/70 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200;
+}
+
+.label {
+  @apply text-xs uppercase tracking-[0.2em] text-slate-500;
+}
+
+.list-card {
+  @apply rounded-2xl border border-black/10 bg-white/70 p-4 shadow-[0_8px_20px_rgba(0,0,0,0.06)];
+}
+
+.uploader {
+  @apply flex flex-col gap-3 rounded-2xl border border-dashed border-black/20 bg-white/70 p-4;
+}
