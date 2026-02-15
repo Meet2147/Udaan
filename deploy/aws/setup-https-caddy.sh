@@ -35,6 +35,7 @@ else
   exit 1
 fi
 
+mkdir -p /etc/caddy
 cat > /etc/caddy/Caddyfile <<EOF
 $DOMAIN {
   reverse_proxy localhost:3000
@@ -45,8 +46,26 @@ $API_DOMAIN {
 }
 EOF
 
-systemctl enable --now caddy
-systemctl reload caddy
+if [ -f /etc/systemd/system/caddy.service ] || systemctl list-unit-files | grep -q caddy.service; then
+  systemctl enable --now caddy
+  systemctl reload caddy
+else
+  cat > /etc/systemd/system/caddy.service <<EOF
+[Unit]
+Description=Caddy
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+ExecReload=/usr/local/bin/caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload
+  systemctl enable --now caddy
+fi
 
 APP_DIR=/opt/udaan
 cd "$APP_DIR"
