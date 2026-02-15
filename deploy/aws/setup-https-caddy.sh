@@ -25,7 +25,8 @@ elif command -v dnf >/dev/null 2>&1; then
     elif [ "$ARCH" = "aarch64" ]; then
       ARCH="arm64"
     fi
-    curl -L "https://github.com/caddyserver/caddy/releases/latest/download/caddy_linux_${ARCH}.tar.gz" -o /tmp/caddy.tgz
+    CADDY_VERSION="2.8.4"
+    curl -L "https://github.com/caddyserver/caddy/releases/download/v${CADDY_VERSION}/caddy_${CADDY_VERSION}_linux_${ARCH}.tar.gz" -o /tmp/caddy.tgz
     tar -xzf /tmp/caddy.tgz -C /tmp
     install -m 0755 /tmp/caddy /usr/local/bin/caddy
   fi
