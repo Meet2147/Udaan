@@ -38,6 +38,12 @@ def run_seed() -> None:
                 password_hash=hash_password(settings.superadmin_password),
             )
             db.add(super_admin)
+        else:
+            super_admin.full_name = settings.superadmin_full_name
+            super_admin.email = settings.superadmin_email
+            super_admin.phone = settings.superadmin_phone
+            super_admin.grade_or_standard = settings.superadmin_grade
+            super_admin.password_hash = hash_password(settings.superadmin_password)
 
         if settings.admin_email:
             admin = db.scalar(select(User).where(User.role == "admin"))
